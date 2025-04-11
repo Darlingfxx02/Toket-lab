@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #FFFFFF;
+      color: #333;
+    }
+    h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .section {
+      margin-bottom: 24px;
+    }
+    .count-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .total {
+      font-weight: 600;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #E5E5E5;
+    }
+    button {
+      background-color: #18A0FB;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+    button#export-to-desktop {
+      background-color: #4CAF50;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .collection-item {
+      margin-left: 16px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .buttons {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+    .hidden {
+      display: none;
+    }
+    .status-message {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .success {
+      background-color: #e6f7e6;
+      color: #2e7d32;
+    }
+    .error {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 style="font-size: 18px; margin: 0;">Variables & Styles Counter</h1>
+  </div>
+  
+  <div class="section">
+    <h2>Variables</h2>
+    <div id="variables-list">
+      <div class="count-item">
+        <span>Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Styles</h2>
+    <div id="styles-list">
+      <div class="count-item">
+        <span>Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="status-container" class="hidden status-message"></div>
+
+  <div class="buttons">
+    <a id="download-link" class="hidden" download="figma-variables-data.json" href="#">
+      <button id="download-btn" class="hidden">Download Data</button>
+    </a>
+    <button id="export-to-desktop">Export to Desktop</button>
+    <button id="export">Export as File</button>
+    <button id="refresh">Refresh</button>
+    <button id="close">Close</button>
+  </div>
+
+  <script inline="inline">
+    let exportedData = null;
+    const downloadLink = document.getElementById('download-link');
+    const downloadBtn = document.getElementById('download-btn');
+    const statusContainer = document.getElementById('status-container');
+    
+    // Listen for messages from the plugin code
+    onmessage = (event) => {
+      const message = event.data.pluginMessage;
+      
+      if (message.type === 'init' || message.type === 'update') {
+        updateVariablesList(message.variablesCount);
+        updateStylesList(message.stylesCount);
+        
+        // Hide download button when data is updated
+        downloadLink.classList.add('hidden');
+        downloadBtn.classList.add('hidden');
+        statusContainer.classList.add('hidden');
+      }
+      
+      if (message.type === 'export-data') {
+        // Create blob and download link
+        const blob = new Blob([message.data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // Update download link
+        downloadLink.href = url;
+        downloadLink.download = `figma-variables-${Date.now()}.json`;
+        
+        // Show download button
+        downloadLink.classList.remove('hidden');
+        downloadBtn.classList.remove('hidden');
+      }
+      
+      if (message.type === 'export-to-desktop') {
+        sendDataToDesktopApp(message.data);
+      }
+    };
+    
+    // Function to send data to desktop application
+    async function sendDataToDesktopApp(data) {
+      try {
+        const response = await fetch('http://localhost:3000/api/tokens', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: data
+        });
+        
+        if (response.ok) {
+          showStatus('Successfully sent data to desktop application!', true);
+        } else {
+          showStatus(`Error: ${response.status} ${response.statusText}`, false);
+        }
+      } catch (error) {
+        console.error('Error sending data to desktop app:', error);
+        showStatus(`Connection error: ${error.message}`, false);
+      }
+    }
+    
+    // Function to show status message
+    function showStatus(message, success) {
+      statusContainer.textContent = message;
+      statusContainer.classList.remove('hidden', 'success', 'error');
+      statusContainer.classList.add(success ? 'success' : 'error');
+    }
+
+    function updateVariablesList(variablesCount) {
+      const container = document.getElementById('variables-list');
+      container.innerHTML = '';
+      
+      if (Object.keys(variablesCount.collections).length === 0) {
+        const item = document.createElement('div');
+        item.className = 'count-item';
+        item.innerHTML = '<span>No variables found</span>';
+        container.appendChild(item);
+      } else {
+        // List all collections
+        for (const [collectionName, count] of Object.entries(variablesCount.collections)) {
+          const item = document.createElement('div');
+          item.className = 'count-item collection-item';
+          item.innerHTML = `<span>${collectionName}</span><span>${count}</span>`;
+          container.appendChild(item);
+        }
+        
+        // Total variables
+        const totalItem = document.createElement('div');
+        totalItem.className = 'count-item total';
+        totalItem.innerHTML = `<span>Total Variables</span><span>${variablesCount.total}</span>`;
+        container.appendChild(totalItem);
+      }
+    }
+
+    function updateStylesList(stylesCount) {
+      const container = document.getElementById('styles-list');
+      container.innerHTML = '';
+      
+      const types = [
+        { key: 'paint', label: 'Color Styles' },
+        { key: 'text', label: 'Text Styles' },
+        { key: 'effect', label: 'Effect Styles' },
+        { key: 'grid', label: 'Grid Styles' }
+      ];
+      
+      // Add each style type
+      types.forEach(type => {
+        const item = document.createElement('div');
+        item.className = 'count-item';
+        item.innerHTML = `<span>${type.label}</span><span>${stylesCount[type.key]}</span>`;
+        container.appendChild(item);
+      });
+      
+      // Total styles
+      const totalItem = document.createElement('div');
+      totalItem.className = 'count-item total';
+      totalItem.innerHTML = `<span>Total Styles</span><span>${stylesCount.total}</span>`;
+      container.appendChild(totalItem);
+    }
+
+    // Button handlers
+    document.getElementById('export-to-desktop').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'export-to-desktop' } }, '*');
+    };
+    
+    document.getElementById('export').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'export' } }, '*');
+    };
+    
+    document.getElementById('refresh').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'refresh' } }, '*');
+    };
+    
+    document.getElementById('close').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+    };
+  </script>
+</body>
+</html> 

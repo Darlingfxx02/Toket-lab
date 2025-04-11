@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Connection to Desktop App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px; margin: 10px 0; }
+        #result { margin-top: 20px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Test Connection to Desktop App</h1>
+    <button id="testButton">Test Connection</button>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('testButton').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = 'Testing connection...';
+            
+            const testData = {
+                variablesCount: {
+                    collections: {
+                        "Test Collection": 5
+                    },
+                    total: 5
+                },
+                stylesCount: {
+                    paint: 3,
+                    text: 2,
+                    effect: 1,
+                    grid: 0,
+                    total: 6
+                }
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/tokens', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Origin': 'http://localhost'
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const resultText = await response.text();
+                let result;
+                
+                try {
+                    result = JSON.parse(resultText);
+                } catch (e) {
+                    result = { raw: resultText };
+                }
+
+                resultDiv.textContent = 'Status: ' + response.status + ' ' + response.statusText + '\n\n' +
+                                      'Response: ' + JSON.stringify(result, null, 2) + '\n\n' +
+                                      'Headers: \n' + 
+                                      Array.from(response.headers.entries())
+                                           .map(([key, value]) => `${key}: ${value}`)
+                                           .join('\n');
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html> 

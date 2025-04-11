@@ -1,0 +1,13 @@
+{
+  "name": "Variables & Styles Counter",
+  "id": "variables-styles-counter",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "permissions": ["currentuser"],
+  "networkAccess": {
+    "allowedDomains": ["localhost:*"],
+    "devAllowedDomains": ["localhost:*"]
+  }
+} 

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр переменных Figma</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Просмотр переменных Figma</h1>
+        
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="manual">Ручная загрузка</button>
+            <button class="tab-btn" data-tab="plugin">Из плагина</button>
+        </div>
+        
+        <div class="tab-content active" id="manual-tab">
+            <div class="upload-container">
+                <input type="file" id="jsonFileInput" accept=".json" style="display:none;">
+                <button id="exportBtn" class="export-btn">Экспорт</button>
+                <p id="fileName" class="file-name"></p>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="plugin-tab">
+            <div class="plugin-container">
+                <p class="plugin-info">Статус подключения: <span id="connectionStatus" class="connection-status">Не подключено</span></p>
+                <button id="checkPluginBtn" class="check-btn">Проверить подключение</button>
+                <button id="loadLatestBtn" class="load-btn">Загрузить последние данные</button>
+            </div>
+        </div>
+        
+        <div id="variablesContainer" class="variables-container">
+            <p class="placeholder-text">Нажмите кнопку "Экспорт" и выберите JSON файл с переменными Figma или получите данные от плагина</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 

@@ -1,0 +1,21 @@
+{
+  "variablesCount": {
+    "collections": {
+      "Colors": 8,
+      "Typography": 7,
+      "Spacing": 6,
+      "Border Radius": 4,
+      "Shadows": 3
+    },
+    "total": 28
+  },
+  "stylesCount": {
+    "paint": 12,
+    "text": 8,
+    "effect": 4,
+    "grid": 0,
+    "total": 24
+  },
+  "timestamp": "2023-09-15T12:34:56.789Z",
+  "fileName": "Design System - Light Theme"
+} 
