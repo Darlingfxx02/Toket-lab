@@ -10,8 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadLatestBtn = document.getElementById('loadLatestBtn');
     const connectionStatus = document.getElementById('connectionStatus');
 
-    // Серверный URL
-    const SERVER_URL = 'http://localhost:3000';
+    // Определяем API URL в зависимости от хоста
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const API_BASE_URL = isLocalhost 
+        ? 'http://localhost:3000/api' 
+        : 'https://toket-lab.vercel.app/api';
 
     // Обработчики табов
     tabButtons.forEach(button => {
@@ -65,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showLoading();
         
         try {
-            const response = await fetch(`${SERVER_URL}/api/tokens`, {
+            const response = await fetch(`${API_BASE_URL}/import`, {
                 method: 'OPTIONS'
             });
             
@@ -79,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             connectionStatus.textContent = 'Не подключено';
             connectionStatus.className = 'connection-status disconnected';
-            showError('Не удалось подключиться к серверу. Убедитесь, что сервер запущен на порту 3000.');
+            showError('Не удалось подключиться к серверу. Убедитесь что плагин Figma настроен правильно.');
             console.error('Ошибка подключения:', error);
         }
     });
@@ -89,11 +92,15 @@ document.addEventListener('DOMContentLoaded', () => {
         showLoading();
         
         try {
-            const response = await fetch(`${SERVER_URL}/latest-tokens.json`);
+            const response = await fetch(`${API_BASE_URL}/import`);
             
             if (response.ok) {
-                const data = await response.json();
-                displayVariables(data);
+                const result = await response.json();
+                if (result.success && result.data) {
+                    displayVariables(result.data);
+                } else {
+                    throw new Error('Данные не найдены');
+                }
             } else {
                 throw new Error('Не удалось получить данные');
             }
@@ -168,7 +175,50 @@ document.addEventListener('DOMContentLoaded', () => {
         // Результирующие данные
         const result = {};
         
-        // Если есть коллекции переменных, добавляем их
+        // Проверяем наличие расширенных данных о переменных
+        if (pluginData.variables && pluginData.variables.collections) {
+            // Новая версия плагина с полными данными о переменных
+            const collections = pluginData.variables.collections;
+            
+            // Обрабатываем каждую коллекцию
+            collections.forEach(collection => {
+                const collectionName = collection.name;
+                result[collectionName] = {};
+                
+                // Обрабатываем переменные в коллекции
+                collection.variables.forEach(variable => {
+                    let displayValue = '';
+                    
+                    // Получаем значение первого режима (mode) для отображения
+                    if (variable.valuesByMode && Object.keys(variable.valuesByMode).length > 0) {
+                        const firstMode = Object.keys(variable.valuesByMode)[0];
+                        const value = variable.valuesByMode[firstMode];
+                        
+                        // Преобразуем значение в зависимости от типа
+                        if (typeof value === 'object' && value !== null) {
+                            if ('r' in value && 'g' in value && 'b' in value) {
+                                // Преобразуем цвет в формат RGB/RGBA
+                                const { r, g, b, a = 1 } = value;
+                                displayValue = a < 1 
+                                    ? `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})` 
+                                    : `rgb(${r}, ${g}, ${b})`;
+                            } else {
+                                displayValue = JSON.stringify(value);
+                            }
+                        } else {
+                            displayValue = String(value);
+                        }
+                    }
+                    
+                    // Добавляем переменную в коллекцию
+                    result[collectionName][variable.name] = displayValue;
+                });
+            });
+            
+            return result;
+        }
+        
+        // Старый формат - только количество переменных
         if (pluginData.variablesCount && pluginData.variablesCount.collections) {
             result.variables = {};
             
@@ -247,4 +297,4 @@ document.addEventListener('DOMContentLoaded', () => {
     function showEmptyState() {
         variablesContainer.innerHTML = '<p class="empty-state">Файл не содержит переменных Figma</p>';
     }
-}); 
+});
